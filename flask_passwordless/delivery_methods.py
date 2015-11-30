@@ -117,16 +117,17 @@ class DeliverBySMTP(DeliveryMethod):
 
 class DeliverBySES(DeliveryMethod):
     def __init__(self, config):
-        # TODO: this can also use the env instead of a config file for keys+id
-        if "AWS_ACCESS_KEY_ID" not in config:
+        self.config = config['SMTP']
+        self.tmpl_config = config['TEMPLATES']
+        # TODO: this should also use the env instead of a config file for keys+id
+        if "AWS_ACCESS_KEY_ID" not in self.config:
             raise ConfigurationError("You must have an AWS ACCESS KEY in the config.")
-        if "AWS_SECRET_ACCESS_KEY" not in config:
+        if "AWS_SECRET_ACCESS_KEY" not in self.config:
             raise ConfigurationError("You must have an AWS SECRET ACCESS KEY in the config.")
-        self.config = config
         self.conn = boto.ses.connect_to_region(
-            'us-west-2',
-            aws_access_key_id=config['AWS_ACCESS_KEY_ID'],
-            aws_secret_access_key=config['AWS_SECRET_ACCESS_KEY'])
+            'us-east-1',
+            aws_access_key_id=self.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=self.config['AWS_SECRET_ACCESS_KEY'])
 
     def __call__(self, token, email):
         """send the login token"""
@@ -144,12 +145,14 @@ class DeliverBySES(DeliveryMethod):
             self.from_email,
             self.msg_subject,
             msg,
-            [target_email])
+            [target_email],
+            html_body=messagetext)
 
 
 DELIVERY_METHODS = {
     'mandrill': DeliverByMandrill,
     'smtp': DeliverBySMTP,
     'log': DeliverByLog,
+    'ses': DeliverBySES,
     'null': DeliverByNull
 }
